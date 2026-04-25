@@ -1,0 +1,67 @@
+name: docker-ngrok-ssh
+
+on:
+  workflow_dispatch:
+
+jobs:
+  ssh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360   # 最多 6 小时
+
+    steps:
+    - name: Check Docker
+      run: |
+        docker --version
+        docker info
+
+    - name: Start Docker SSH container
+      run: |
+        docker run -d \
+          --name dockerssh \
+          -e SSH_USER=ttt0090 \
+          -e SSH_PASSWORD=123789 \
+          -p 2222:22 \
+          ghcr.io/vevc/ubuntu:25.7.14
+           echo "Waiting for container..."
+        sleep 10
+        docker ps
+
+    - name: Install tools (no Docker)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y curl jq openssh-client
+
+    - name: Download ngrok
+      run: |
+        curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz \
+          -o ngrok.tgz
+        tar -xzf ngrok.tgz
+        chmod +x ngrok
+
+    - name: Auth ngrok
+      run: |
+        ./ngrok authtoken ${{ secrets.NGROK_AUTH_TOKEN }}
+
+    - name: Start ngrok TCP 2222
+      run: |
+        ./ngrok tcp 2222 > ngrok.log &
+        sleep 15
+
+        curl -s http://127.0.0.1:4040/api/tunnels \
+                                                   | jq -r '.tunnels[0].public_url' \
+          > public_url.txt
+
+        echo "======================================"
+        echo "SSH 公网入口："
+        cat public_url.txt
+        echo
+        echo "用户名：ttt0090"
+        echo "密码：123789"
+        echo "======================================"
+
+    - name: Keep alive
+      run: |
+        for i in $(seq 1 360); do
+          echo "alive minute $i"
+          sleep 60
+        done
